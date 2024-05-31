@@ -16,6 +16,11 @@ export class AccountService {
         return account;
     }
 
+    async getAccountByPixKey(pixKey: string) {
+        const account = await this.accountRepository.findOneByPixKey(pixKey);
+        return account;
+    }
+
     async getAccountByUserId(id: number) {
         const account = await this.accountRepository.findOneByUserId(id);
         return account;

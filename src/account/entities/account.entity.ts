@@ -1,6 +1,5 @@
 import BaseEntity from "src/base_entity/base.entity";
 import { PixKey } from "src/pix-key/entities/pix-key.entity";
-import { Transaction } from "src/transaction/entities/transaction.entity";
 import { Column, Entity, JoinTable, OneToMany } from "typeorm";
 
 @Entity()
@@ -22,14 +21,6 @@ export class Account extends BaseEntity {
         this.pixKeys = account?.pixKeys ?? null;
     }
 
-    updateBalance(amount: number) {
-        if (amount <= 0 && this.balance < amount) {
-            throw new Error("Unsuficient funds");
-        }
-
-        this.balance += amount;
-    }
-
     deposit(amount: number) {
         this.balance += amount;
     }
@@ -37,5 +28,4 @@ export class Account extends BaseEntity {
     withdraw(amount: number) {
         this.balance -= amount;
     }
-
 }

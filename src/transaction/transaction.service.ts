@@ -30,7 +30,6 @@ export class TransactionService {
       await queryRunner.startTransaction();
       const payerAccount = await queryRunner.manager.findOneOrFail(Account, { where: { userId: payerUserId } });
       const payeeAccount = await queryRunner.manager.findOneOrFail(Account, { where: { pixKeys: { value: payeePixKey } } });
-      const x = await queryRunner.manager.findOneOrFail(Transaction, { where: { accountId: 1, payerUserId: 3, payeePixKey: "ss" } });
 
       if (!payerAccount) {
         throw new PayerAccountNotFound("")
@@ -87,7 +86,7 @@ export class TransactionService {
   }
 
   /**
-  * Find one Transaction using your own id.
+  * Find one Transaction using id.
   * 
   * @returns {Transaction | null} Especifc Transaction.
   */

@@ -11,4 +11,9 @@ export class UsersService {
         const user = await this.usersRepository.findOne(id);
         return user;
     }
+
+    async getUserByPixKey(pixKey: string) {
+        const user = await this.usersRepository.findOneByPixKey(pixKey);
+        return user;
+    }
 }

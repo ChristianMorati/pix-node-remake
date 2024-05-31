@@ -13,4 +13,11 @@ export class UserController {
         const user = await this.userService.getFullData(id);
         return user;
     }
+
+    @Get('pixKey/:pixKey')
+    async getUserByPixKey(@Param() param: any) {
+        const { pixKey } = param;
+        const user = await this.userService.getUserByPixKey(pixKey);
+        return user;
+    }
 }

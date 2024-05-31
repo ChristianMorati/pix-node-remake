@@ -23,6 +23,34 @@ export class AccountController {
         }
     }
 
+    @Get('user/:userId')
+    async getAccountByUserId(
+        @Param() param: any,
+        @Res() res: Response
+    ) {
+        const { userId } = param;
+        try {
+            const account = await this.accountService.getAccountByUserId(userId)
+            res.status(HttpStatus.OK).json(account);
+        } catch (e) {
+            res.status(HttpStatus.BAD_REQUEST).send();
+        }
+    }
+
+    @Get('key/:pixKey')
+    async getAccountByPixKey(
+        @Param() param: any,
+        @Res() res: Response
+    ) {
+        const { pixKey } = param;
+        try {
+            const account = await this.accountService.getAccountByPixKey(pixKey)
+            res.status(HttpStatus.OK).json(account);
+        } catch (e) {
+            res.status(HttpStatus.BAD_REQUEST).send();
+        }
+    }
+
     @Get()
     async all(
         @Res() res: Response
