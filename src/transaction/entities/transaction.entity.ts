@@ -4,20 +4,20 @@ import { Column, Entity, JoinTable, ManyToOne, PrimaryColumn } from "typeorm";
 
 @Entity()
 export class Transaction extends BaseEntity {
-    @Column()
+    @Column({ type: 'float' })
     amount: number;
 
     @Column()
     payerUserId: number;
 
-    @Column()
+    @Column({ nullable: true })
     payeePixKey: string
 
     @Column()
     accountId: number;
-
-    @Column({ type: "date" })
-    date?: Date;
+    
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    date: Date;
 
     @Column()
     success: boolean
@@ -28,7 +28,6 @@ export class Transaction extends BaseEntity {
         this.payerUserId = transaction?.payerUserId ?? null;
         this.payeePixKey = transaction?.payeePixKey ?? null;
         this.accountId = transaction?.accountId ?? null;
-        this.date = transaction?.date ?? new Date();
         this.success = transaction?.success ?? false;
     }
 }

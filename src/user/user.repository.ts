@@ -25,10 +25,8 @@ export class UserRepository {
             }
         })
     }
-
-    async findOneByPixKey(pixKey: string) {
-        const user: User = await this.userRepository.findOneBy(
-            { where: { account: { pixKeys: { value: pixKey } } } })
-        return user;
+    async findOneByPixKey(pixKey: string): Promise<User | null> {
+        const user: User = await this.userRepository.findOne({ where: { account: { pixKeys: { value: pixKey } } } });
+        return user || null;
     }
 }

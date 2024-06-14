@@ -25,11 +25,18 @@ export class TransactionService {
   async create(createTransactionDto: CreateTransactionDto): Promise<Transaction> {
     const { payerUserId, payeePixKey, amount } = createTransactionDto;
 
+    console.error(payerUserId, payeePixKey, amount)
+
     const queryRunner = this.entityManager.connection.createQueryRunner();
     try {
       await queryRunner.startTransaction();
       const payerAccount = await queryRunner.manager.findOneOrFail(Account, { where: { userId: payerUserId } });
       const payeeAccount = await queryRunner.manager.findOneOrFail(Account, { where: { pixKeys: { value: payeePixKey } } });
+
+      if (payerAccount.id === payeeAccount.id) {
+        console.error('Same account for payer and payee:', payerAccount, payeeAccount);
+        throw new Error('Payer and payee accounts are the same');
+      }
 
       if (!payerAccount) {
         throw new PayerAccountNotFound("")
@@ -78,7 +85,6 @@ export class TransactionService {
 
   /**
   * List all Transaction Objects.
-  * 
   * @returns {Transaction[] | null} All Transactions or null.
   */
   async findAll(): Promise<Transaction[] | null> {
@@ -87,12 +93,20 @@ export class TransactionService {
 
   /**
   * Find one Transaction using id.
-  * 
   * @returns {Transaction | null} Especifc Transaction.
   */
   async findOne(id: number): Promise<Transaction | null> {
     const transaction = await this.transactionRepository.findOne(id);
     return transaction ? transaction : null;
+  }
+
+  /**
+  * Find many Transactions using accountId.
+  * @returns {Transaction[] | null} All Transactions by accountId.
+  */
+  async findAllByAccountId(accountId: number): Promise<Transaction[] | null> {
+    const transactions = await this.transactionRepository.findAllByAccountId(accountId);
+    return transactions ? transactions : null;
   }
 
   update(id: number, updateTransactionDto: UpdateTransactionDto) {

@@ -2,6 +2,7 @@ import { Body, Controller, Get, HttpStatus, Param, Post, Res } from "@nestjs/com
 import { AccountService } from "../service/account-service";
 import { CreateAccountDto } from "../dto/create-account-dto";
 import { Response } from "express";
+import { DepositAccountDto } from "../dto/deposit-account.dto";
 
 @Controller('account')
 export class AccountController {
@@ -45,6 +46,20 @@ export class AccountController {
         const { pixKey } = param;
         try {
             const account = await this.accountService.getAccountByPixKey(pixKey)
+            res.status(HttpStatus.OK).json(account);
+        } catch (e) {
+            res.status(HttpStatus.BAD_REQUEST).send();
+        }
+    }
+
+    @Post('deposit')
+    async deposit(
+        @Body() dto: DepositAccountDto,
+        @Res() res: Response
+    ) {
+        try {
+            const account = await this.accountService.deposit(dto)
+            console.error(account);
             res.status(HttpStatus.OK).json(account);
         } catch (e) {
             res.status(HttpStatus.BAD_REQUEST).send();

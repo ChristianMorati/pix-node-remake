@@ -22,6 +22,10 @@ export class TransactionRepository {
         return this.accountRepository.find();
     }
 
+    findAllByAccountId(accountId: number): Promise<Transaction[]> {
+        return this.accountRepository.find({ where: { accountId }, order: { date: 'DESC' } });
+    }
+
     async remove(id: number): Promise<void> {
         await this.accountRepository.delete(id);
     }

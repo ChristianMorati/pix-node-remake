@@ -15,13 +15,39 @@ export class TransactionController {
   ) {
     try {
       const transaction = await this.transactionService.create(createTransactionDto);
-      if (!transaction) {
-        res.status(HttpStatus.BAD_REQUEST).send();
+      if (!transaction.success) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          success: false,
+          message: 'Failed to create transaction',
+        });
       }
 
-      res.status(HttpStatus.CREATED).json(transaction);
+      return res.status(HttpStatus.CREATED).json(transaction);
     } catch (error) {
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(error)
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: 'Internal server error',
+        error: error.message,
+      });
+    }
+  }
+
+
+  @Get('all/:accountId')
+  async findAllByAccountId(
+    @Param() params: any,
+    @Res() res: Response,
+  ) {
+    const { accountId } = params;
+
+    try {
+      const transactions = await this.transactionService.findAllByAccountId(accountId);;
+      if (!transactions) {
+        res.status(HttpStatus.BAD_REQUEST).send();
+      }
+      res.status(HttpStatus.OK).json(transactions);
+    } catch (error) {
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR)
     }
   }
 

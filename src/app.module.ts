@@ -1,7 +1,6 @@
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { Module } from '@nestjs/common';
-import { PaymentModule } from './payment/payment.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { User } from './user/entities/user.entity';
@@ -12,6 +11,8 @@ import { PixKey } from './pix-key/entities/pix-key.entity';
 import { TransactionModule } from './transaction/transaction.module';
 import { Transaction } from './transaction/entities/transaction.entity';
 import { JwtModule } from '@nestjs/jwt';
+import { AuthGuard } from './auth/guard/auth-guard';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -38,12 +39,16 @@ import { JwtModule } from '@nestjs/jwt';
     }),
     UserModule,
     AuthModule,
-    PaymentModule,
     AccountModule,
     TransactionModule,
     PixKeyModule
   ],
   controllers: [],
-  providers: [],
+  // providers: [
+  //   {
+  //     provide: APP_GUARD,
+  //     useClass: AuthGuard,
+  //   },
+  // ],
 })
 export class AppModule { }
