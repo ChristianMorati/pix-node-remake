@@ -11,8 +11,6 @@ import { PixKey } from './pix-key/entities/pix-key.entity';
 import { TransactionModule } from './transaction/transaction.module';
 import { Transaction } from './transaction/entities/transaction.entity';
 import { JwtModule } from '@nestjs/jwt';
-import { AuthGuard } from './auth/guard/auth-guard';
-import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -44,11 +42,6 @@ import { APP_GUARD } from '@nestjs/core';
     PixKeyModule
   ],
   controllers: [],
-  // providers: [
-  //   {
-  //     provide: APP_GUARD,
-  //     useClass: AuthGuard,
-  //   },
-  // ],
+  providers: []
 })
 export class AppModule { }

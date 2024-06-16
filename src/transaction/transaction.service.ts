@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { EntityManager } from 'typeorm';
@@ -7,13 +7,15 @@ import { Account } from 'src/account/entities/account.entity';
 import { Transaction } from './entities/transaction.entity';
 import { InsufficientFundsError, PayeeAccountNotFound, PayerAccountNotFound } from 'src/errors';
 import { TransactionRepository } from './transaction.repository';
+import { AccountRepository } from 'src/account/account.repository';
 
 @Injectable()
 export class TransactionService {
   constructor(
     @InjectEntityManager()
     private readonly entityManager: EntityManager,
-    private readonly transactionRepository: TransactionRepository
+    private readonly transactionRepository: TransactionRepository,
+    private readonly accountRepository: AccountRepository
   ) { }
 
   /**
@@ -105,7 +107,14 @@ export class TransactionService {
   * @returns {Transaction[] | null} All Transactions by accountId.
   */
   async findAllByAccountId(accountId: number): Promise<Transaction[] | null> {
-    const transactions = await this.transactionRepository.findAllByAccountId(accountId);
+    const account = await this.accountRepository.findOne(accountId);
+    if(!account.id) {
+      throw new NotFoundException();
+    }
+    const pixKeys = account.pixKeys;
+    const filterBy = pixKeys.map((pixKey) => pixKey.value)
+    console.error(filterBy)
+    const transactions = await this.transactionRepository.findAllByAccountId(accountId, filterBy);
     return transactions ? transactions : null;
   }
 

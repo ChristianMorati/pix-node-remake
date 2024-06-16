@@ -67,41 +67,47 @@ export class AuthService {
         return refreshToken;
     }
 
-    /**
-    * Login User and generates a tokens.
-    * @returns {
-    * accessToken: string,
-    * refresh_token: string,
-    * user: Pick<User, 'username' | 'name' | 'id' | 'cpf'>;} User and Tokens.
-    */
-    async signin(username: string, userPassword: string): Promise<Object> {
+    async validateUser(payload: any) {
+        const { username } = payload;
+
+        // Verifica se o usuário existe no banco de dados
         const user = await this.usersRepository.findOneByUsername(username);
 
         if (!user) {
-            throw new UnauthorizedException();
-        }
-        if (!await this.compareHashPassword(userPassword, user.password)) {
-            throw new UnauthorizedException();
+            throw new UnauthorizedException('Usuário não encontrado');
         }
 
-        const payload = { sub: user.id, username: user.username };
-        const accessToken = await this.genAccessToken(payload);
-        const refreshToken = await this.genRefreshToken(payload);
+        // Aqui você pode adicionar lógica adicional para verificar se o usuário está ativo, etc.
 
-        if (user.cpf) {
-            user.cpf = this.decryptToken(user.cpf)
-        };
-
-        const { password, ...signedUser } = user;
-        return { user: { ...signedUser }, access_token: accessToken, refresh_token: refreshToken };
+        return user; // Retorna o usuário autenticado
     }
 
     /**
-    * Save an User and generates a tokens.
-    * @returns {
-    * accessToken: string,
-    * refresh_token: string,
-    * user: Pick<User, 'username' | 'name' | 'id' | 'cpf'>;} User and Tokens.
+    * Login User and generates a tokens.
+    */
+    async signin(username: string, userPassword: string):
+        Promise<{ access_token: string, refresh_token: string, user: Pick<User, 'username' | 'name' | 'id'> }> {
+        var userSignin = await this.usersRepository.findOneByUsername(username);
+
+        if (!userSignin) {
+            throw new UnauthorizedException();
+        }
+        if (!await this.compareHashPassword(userPassword, userSignin.password)) {
+            throw new UnauthorizedException();
+        }
+
+        if (userSignin.cpf) {
+            userSignin.cpf = this.decryptToken(userSignin.cpf)
+        };
+
+        const tokens = await this.genTokens(userSignin.id, userSignin.username);
+
+        const { password, ...user } = userSignin;
+        return { user, ...tokens };
+    }
+
+    /**
+    * Create an User and generates a tokens.
     */
     async signUp(createUserDto: CreateUserDto):
         Promise<{ access_token: string, refresh_token: string, user: Pick<User, 'username' | 'name' | 'id'> }> {
@@ -147,7 +153,7 @@ export class AuthService {
 
             await queryRunner.commitTransaction();
 
-            return { user: {...user}, ...tokens};
+            return { user, ...tokens };
         } catch (error) {
             if (queryRunner.isTransactionActive) { await queryRunner.rollbackTransaction(); }
 

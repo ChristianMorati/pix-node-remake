@@ -17,17 +17,27 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     async signIn(
         @Body() authDto: AuthDto,
-        @Res() res: Response) {
+        @Res() res: Response,
+    ) {
         try {
-            const user = await this.authService.signin(authDto.username, authDto.password);
-            if (!user) {
-                res.status(HttpStatus.BAD_REQUEST).send();
+            const result = await this.authService.signin(authDto.username, authDto.password);
+            if (!result.user) {
+                return res.status(HttpStatus.BAD_REQUEST).send();
             }
-            res.status(HttpStatus.OK).json(user).send();
+
+            res.cookie('token', result.access_token, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'strict',
+                maxAge: 3600000, // 1 hour
+            });
+
+            return res.status(HttpStatus.OK).json(result);
         } catch (error) {
-            res.status(HttpStatus.INTERNAL_SERVER_ERROR).send();
+            return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send();
         }
     }
+
 
     @Post('signup')
     @HttpCode(HttpStatus.CREATED)
@@ -36,7 +46,7 @@ export class AuthController {
         @Res() res: Response) {
         try {
             const user = await this.authService.signUp(createUserDto);
-            res.status(HttpStatus.CREATED).json({ success: true, message: 'User created successfully', user }).send();
+            res.status(HttpStatus.CREATED).json(user).send();
         } catch (error) {
             throw new HttpException(
                 { success: false, message: error.message || 'Error creating user' },

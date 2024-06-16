@@ -7,26 +7,30 @@ import { Transaction } from './entities/transaction.entity';
 export class TransactionRepository {
     constructor(
         @InjectRepository(Transaction)
-        private accountRepository: Repository<Transaction>,
+        private transactionRepository: Repository<Transaction>,
     ) { }
 
-    save(account: Transaction): Promise<Transaction | undefined> {
-        return this.accountRepository.save(account);
+    save(transaction: Transaction): Promise<Transaction | undefined> {
+        return this.transactionRepository.save(transaction);
     }
 
     findOne(id: number): Promise<Transaction | null> {
-        return this.accountRepository.findOneBy({ id });
+        return this.transactionRepository.findOneBy({ id });
     }
 
     findAll(): Promise<Transaction[]> {
-        return this.accountRepository.find();
+        return this.transactionRepository.find();
     }
 
-    findAllByAccountId(accountId: number): Promise<Transaction[]> {
-        return this.accountRepository.find({ where: { accountId }, order: { date: 'DESC' } });
+    findAllByAccountId(accountId: number, pixKeys: string[]): Promise<Transaction[]> {
+        return this.transactionRepository.createQueryBuilder('transaction')
+            .where('transaction.accountId = :accountId', { accountId })
+            .orWhere('transaction.payeePixKey IN (:...pixKeys)', { pixKeys })
+            .orderBy('transaction.date', 'DESC')
+            .getMany();
     }
 
     async remove(id: number): Promise<void> {
-        await this.accountRepository.delete(id);
+        await this.transactionRepository.delete(id);
     }
 }
