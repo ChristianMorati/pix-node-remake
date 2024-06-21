@@ -1,6 +1,6 @@
-import { Account } from "src/account/entities/account.entity";
-import BaseEntity from "src/base_entity/base.entity";
-import { Column, Entity, JoinTable, ManyToOne, PrimaryColumn } from "typeorm";
+import { Entity, Column } from 'typeorm';
+import { TransactionType } from '../enum/transaction-type.enum';
+import BaseEntity from 'src/base_entity/base.entity';
 
 @Entity()
 export class Transaction extends BaseEntity {
@@ -8,26 +8,34 @@ export class Transaction extends BaseEntity {
     amount: number;
 
     @Column()
+    payeePixKeyType: string;
+
+    @Column()
     payerUserId: number;
 
     @Column({ nullable: true })
-    payeePixKey: string
+    payeePixKey: string;
 
     @Column()
     accountId: number;
-    
+
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     date: Date;
 
     @Column()
-    success: boolean
+    success: boolean;
+
+    @Column({ type: 'enum', enum: TransactionType })
+    type: TransactionType;
 
     constructor(transaction: Partial<Transaction>) {
         super();
         this.amount = transaction?.amount ?? 0;
+        this.payeePixKeyType = transaction?.payeePixKeyType ?? null;
         this.payerUserId = transaction?.payerUserId ?? null;
         this.payeePixKey = transaction?.payeePixKey ?? null;
         this.accountId = transaction?.accountId ?? null;
         this.success = transaction?.success ?? false;
+        this.type = transaction?.type ?? TransactionType.TRANSACTION;
     }
 }

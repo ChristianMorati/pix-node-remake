@@ -1,6 +1,6 @@
 import { Body, Controller, HttpCode, HttpException, HttpStatus, Post, Put, Res, UnauthorizedException } from '@nestjs/common';
 import { Response } from 'express';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { AuthDto } from '../dto/auth.dto';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { AuthService } from '../service/auth.service';
@@ -41,6 +41,7 @@ export class AuthController {
 
     @Post('signup')
     @HttpCode(HttpStatus.CREATED)
+    @ApiBody({ description: 'The user data what you want to create', type: CreateUserDto })
     async signUp(
         @Body() createUserDto: CreateUserDto,
         @Res() res: Response) {

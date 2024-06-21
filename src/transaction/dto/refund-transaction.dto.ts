@@ -3,25 +3,25 @@ import { IsNumber, IsString, Min, IsEnum } from 'class-validator';
 import { PixKeyType } from '../enum/pix-key-type.enum';
 import { TransactionType } from '../enum/transaction-type.enum';
 
-export class CreateTransactionDto {
+export class RefundTransactionDto {
     @ApiProperty({
-        description: 'The amount of money to be transferred. Must be at least 0.50.',
-        example: 150.50
+        description: 'The amount of money to be refunded. Must be at least 0.50.',
+        example: 50.75
     })
     @IsNumber()
     @Min(0.50, { message: 'Amount must be at least 0.50' })
     amount: number;
 
     @ApiProperty({
-        description: 'The ID of the user making the payment. Must be a positive integer greater than 1.',
-        example: 12345
+        description: 'The ID of the user making the refund. Must be a positive integer greater than 1.',
+        example: 54321
     })
     @IsNumber()
     @Min(1, { message: 'Payer user ID must be a positive integer greater than 1' })
     payerUserId: number;
 
     @ApiProperty({
-        description: 'The Pix key of the payee.',
+        description: 'The Pix key of the payee receiving the refund.',
         example: 'payee@example.com'
     })
     @IsString()

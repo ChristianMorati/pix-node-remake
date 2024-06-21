@@ -12,9 +12,9 @@ export class UsersService {
         return user;
     }
 
-    async getUserByPixKey(pixKey: string): Promise<string> {
+    async getUserByPixKey(pixKey: string, type: string): Promise<string> {
         try {
-            const user = await this.usersRepository.findOneByPixKey(pixKey);
+            const user = await this.usersRepository.findOneByPixKey(pixKey, type);
             if (!user) throw new NotFoundException('User not found');
 
             return user.name;

@@ -3,12 +3,17 @@ import { TransactionService } from './transaction.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { Response } from 'express';
+import { ApiBody, ApiTags } from '@nestjs/swagger';
+import { RefundTransactionDto } from './dto/refund-transaction.dto';
+import { TransactionDto } from './dto/transaction.dto';
 
+@ApiTags('transaction')
 @Controller('transaction')
 export class TransactionController {
   constructor(private readonly transactionService: TransactionService) { }
 
   @Post()
+  @ApiBody({ type: CreateTransactionDto })
   async create(
     @Body() createTransactionDto: CreateTransactionDto,
     @Res() res: Response,
@@ -32,6 +37,30 @@ export class TransactionController {
     }
   }
 
+  @Post('refund')
+  @ApiBody({ type: TransactionDto })
+  async refund(
+    @Body() refundTransactionDto: TransactionDto,
+    @Res() res: Response,
+  ) {
+    try {
+      const transaction = await this.transactionService.refund(refundTransactionDto);
+      if (!transaction.success) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          success: false,
+          message: 'Failed to refund',
+        });
+      }
+
+      return res.status(HttpStatus.CREATED).json(transaction);
+    } catch (error) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: 'Internal server error',
+        error: error.message,
+      });
+    }
+  }
 
   @Get('all/:accountId')
   async findAllByAccountId(
