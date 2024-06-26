@@ -1,39 +1,60 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Res, HttpStatus, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Res, HttpStatus, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Response } from 'express';
 import { UsersService } from '../service/user.service';
 import { z } from 'zod';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { NumericIdPipe } from 'src/pipes/numeric-id.pipe';
+import { GetUserByPixKey } from '../dto/get-user-by-pix-key.dto';
 
-@ApiTags('User')
+@ApiTags('user')
 @Controller('user')
 export class UserController {
     constructor(
         private userService: UsersService,
     ) { }
 
+
     @Get(':id')
-    async getUser(@Param() param: any) {
-        const { id } = param;
-        const user = await this.userService.getFullData(id);
-        return user;
+    @ApiOperation({ summary: 'Get account by User ID' })
+    @ApiParam({
+        name: 'id',
+        required: true,
+        description: 'The unique identifier of the user',
+        example: '1',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Successfully retrieved the account associated with the user',
+    })
+    @ApiResponse({
+        status: 400,
+        description: 'Bad request due to invalid User ID or other error',
+    })
+    async getAccountByUserId(
+        @Param('id', NumericIdPipe) id: number,
+        @Res() res: Response
+    ) {
+        try {
+            const user = await this.userService.getFullData(id)
+            if (!user) {
+                res.status(HttpStatus.BAD_REQUEST).send();
+            }
+            res.status(HttpStatus.OK).json(user);
+        } catch (error) {
+            if (error instanceof BadRequestException) {
+                res.status(HttpStatus.BAD_REQUEST).json(error);
+            } else {
+                res.status(HttpStatus.INTERNAL_SERVER_ERROR).send();
+            }
+        }
     }
 
     @Post('pixKey')
-    async getUserByPixKey(@Body() body: any, @Res() res: Response) {
+    @ApiOperation({ summary: "Get a user name based in pixKey value and type" })
+    @ApiBody({ type: GetUserByPixKey })
+    async getUserByPixKey(@Body() dto: GetUserByPixKey, @Res() res: Response) {
         try {
-            const pixKeySchema = z.object({
-                pixKey: z.string().min(8),
-                type: z.string().min(3),
-            });
-
-            const result = pixKeySchema.safeParse(body);
-            if (!result.success) {
-                return res.status(HttpStatus.BAD_REQUEST).send();
-            }
-
-            const { pixKey, type } = result.data;
-
-            const name = await this.userService.getUserByPixKey(pixKey, type);
+            const name = await this.userService.getUserByPixKey(dto.value, dto.type);
             if (!name) {
                 return res.status(HttpStatus.NOT_FOUND).send();
             }

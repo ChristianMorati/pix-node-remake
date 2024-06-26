@@ -3,9 +3,9 @@ import { TransactionService } from './transaction.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { Response } from 'express';
-import { ApiBody, ApiTags } from '@nestjs/swagger';
-import { RefundTransactionDto } from './dto/refund-transaction.dto';
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { TransactionDto } from './dto/transaction.dto';
+import { NumericIdPipe } from 'src/pipes/numeric-id.pipe';
 
 @ApiTags('transaction')
 @Controller('transaction')
@@ -13,7 +13,8 @@ export class TransactionController {
   constructor(private readonly transactionService: TransactionService) { }
 
   @Post()
-  @ApiBody({ type: CreateTransactionDto })
+  @ApiOperation({ summary: 'Update account balances and record a transaction object' })
+  @ApiBody({ type: CreateTransactionDto, required: true })
   async create(
     @Body() createTransactionDto: CreateTransactionDto,
     @Res() res: Response,
@@ -38,7 +39,8 @@ export class TransactionController {
   }
 
   @Post('refund')
-  @ApiBody({ type: TransactionDto })
+  @ApiOperation({ summary: 'Refund amount to origin account and update transaction type to refund' })
+  @ApiBody({ type: TransactionDto, required: true })
   async refund(
     @Body() refundTransactionDto: TransactionDto,
     @Res() res: Response,
@@ -63,14 +65,13 @@ export class TransactionController {
   }
 
   @Get('all/:accountId')
+  @ApiOperation({ summary: 'Get all transactions of especific account' })
   async findAllByAccountId(
-    @Param() params: any,
+    @Param('accountId', NumericIdPipe) accountId: number,
     @Res() res: Response,
   ) {
-    const { accountId } = params;
-
     try {
-      const transactions = await this.transactionService.findAllByAccountId(accountId);;
+      const transactions = await this.transactionService.findAllByAccountId(accountId);
       if (!transactions) {
         res.status(HttpStatus.BAD_REQUEST).send();
       }
@@ -81,22 +82,28 @@ export class TransactionController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'Get all transactions' })
   findAll() {
     return this.transactionService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  @ApiOperation({ summary: 'Get transaction by ID' })
+  findOne(
+    @Param('id', NumericIdPipe) id: number) {
     return this.transactionService.findOne(+id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTransactionDto: UpdateTransactionDto) {
+  @ApiOperation({ summary: 'Update transaction by ID' })
+  @ApiBody({ type: UpdateTransactionDto, required: true })
+  update(@Param('id', NumericIdPipe) id: number, @Body() updateTransactionDto: UpdateTransactionDto) {
     return this.transactionService.update(+id, updateTransactionDto);
   }
 
+  @ApiOperation({ summary: 'Delete transaction by ID' })
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', NumericIdPipe) id: number) {
     return this.transactionService.remove(+id);
   }
 }

@@ -4,12 +4,19 @@ import { CreatePixKeyDto } from './dto/create-pix-key.dto';
 import { UpdatePixKeyDto } from './dto/update-pix-key.dto';
 import { Response } from 'express';
 import { TogglePixKeyDto } from './dto/toggle-pix-key.dto';
+import { ApiBody, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { PixKeyType } from './enum/pix-key-type.enum';
+import { NumericIdPipe } from 'src/pipes/numeric-id.pipe';
 
+@ApiTags('pix key')
 @Controller('pix-key')
 export class PixKeyController {
   constructor(private readonly pixKeyService: PixKeyService) { }
 
   @Post()
+  @ApiBody({
+    type: CreatePixKeyDto
+  })
   async create(@Body() createPixKeyDto: CreatePixKeyDto,
     @Res() res: Response) {
     try {
@@ -24,12 +31,30 @@ export class PixKeyController {
     }
   }
 
+  @ApiParam({
+    name: 'type',
+    type: 'string',
+    enum: PixKeyType,
+    description: 'The type of the Pix key to deactivate (e.g., EMAIL, PHONE, CPF).',
+    allowEmptyValue: false,
+    required: true,
+  })
+  @ApiParam({
+    name: 'accountId',
+    type: 'number',
+    allowEmptyValue: false,
+    description: 'The numerical ID of the account associated with the Pix key.',
+    required: true,
+  })
+  @ApiResponse({ status: 200, description: 'Pix key deactivated successfully.' })
+  @ApiResponse({ status: 400, description: 'Bad request (e.g., invalid parameters).' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
   @Post('deactivate/:type/:accountId')
   async deactivate(
-    @Param() params: TogglePixKeyDto,
+    @Param() dto: TogglePixKeyDto,
     @Res() res: Response) {
     try {
-      const { type, accountId } = params;
+      const { type, accountId } = dto;
       const response = await this.pixKeyService.deactivate(accountId, type);
       if (!response) {
         res.status(HttpStatus.BAD_REQUEST).send();
@@ -41,6 +66,24 @@ export class PixKeyController {
     }
   }
 
+  @ApiParam({
+    name: 'type',
+    type: 'string',
+    enum: PixKeyType,
+    description: 'The type of the Pix key to activate (e.g., EMAIL, PHONE, CPF).',
+    allowEmptyValue: false,
+    required: true,
+  })
+  @ApiParam({
+    name: 'accountId',
+    type: 'number',
+    description: 'The numerical ID of the account associated with the Pix key.',
+    allowEmptyValue: false,
+    required: true,
+  })
+  @ApiResponse({ status: 200, description: 'Pix key deactivated successfully.' })
+  @ApiResponse({ status: 400, description: 'Bad request (e.g., invalid parameters).' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
   @Post('activate/:type/:accountId')
   async activate(
     @Param() params: TogglePixKeyDto,
@@ -64,21 +107,17 @@ export class PixKeyController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', NumericIdPipe) id: string) {
     return this.pixKeyService.findOne(+id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePixKeyDto: UpdatePixKeyDto) {
+  update(@Param('id', NumericIdPipe) id: string, @Body() updatePixKeyDto: UpdatePixKeyDto) {
     return this.pixKeyService.update(+id, updatePixKeyDto);
   }
-  @Delete(':id')
-  remove(@Param('id') id: string) {
 
-    const x = {
-      "accountId": 1,
-      "type": "cpf"
-    }
+  @Delete(':id')
+  remove(@Param('id', NumericIdPipe) id: string) {
     return this.pixKeyService.remove(+id);
   }
 }

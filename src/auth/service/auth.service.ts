@@ -1,7 +1,7 @@
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto-js';
 
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -9,7 +9,7 @@ import { User } from 'src/user/entities/user.entity';
 import { jwtConstants } from '../constants';
 import { UserRepository } from 'src/user/user.repository';
 import { InjectEntityManager } from '@nestjs/typeorm';
-import { EntityManager } from 'typeorm';
+import { EntityManager, EntityNotFoundError } from 'typeorm';
 import { Account } from 'src/account/entities/account.entity';
 import { PixKey } from 'src/pix-key/entities/pix-key.entity';
 
@@ -106,6 +106,30 @@ export class AuthService {
         return { user, ...tokens };
     }
 
+    async cpfAlreadyExists(cpf: string) {
+        try {
+            await this.usersRepository.findOneByCpf(cpf);
+            throw new BadRequestException(`user with cpf: ${cpf} already exists`);
+        } catch (e) {
+            if (e instanceof EntityNotFoundError) {
+                return null;
+            }
+            throw e;
+        }
+    }
+
+    async emailAlreadyExists(email: string) {
+        try {
+            await this.usersRepository.findOneByUsername(email);
+            throw new BadRequestException(`user with email: ${email} already exists`);
+        } catch (e) {
+            if (e instanceof EntityNotFoundError) {
+                return null;
+            }
+            throw e;
+        }
+    }
+
     /**
     * Create an User and generates a tokens.
     */
@@ -115,16 +139,21 @@ export class AuthService {
         const queryRunner = this.entityManager.connection.createQueryRunner();
         try {
             await queryRunner.startTransaction();
+
+            await this.emailAlreadyExists(createUserDto.username);
+
             createUserDto.password = await this.hashPassword(createUserDto.password);
             var rawCpf = createUserDto.cpf;
 
-            if (rawCpf !== undefined) createUserDto.cpf = this.encryptToken(createUserDto.cpf);
+            if (rawCpf !== undefined) {
+                await this.cpfAlreadyExists(rawCpf);
+            }
 
             let createdUser: User = await this.usersRepository.save(createUserDto);
 
             if (!createdUser.id) { throw Error('Error to save user'); }
 
-            //Create account for a user an set one pix key
+            //Create account for a user and set one pix key
             const account = new Account({
                 userId: createdUser.id,
             })
@@ -134,12 +163,12 @@ export class AuthService {
 
             // assign keys to user account
             createdUser.account.pixKeys = []
-            const emailPixKey = new PixKey({ accountId: account.id, value: createdUser.username, type: 'email', });
+            const emailPixKey = new PixKey({ accountId: createdUser.account.id, value: createdUser.username, type: 'email', });
             await queryRunner.manager.save(PixKey, emailPixKey);
             createdUser.account.pixKeys.push(emailPixKey);
 
             if (rawCpf !== undefined) {
-                const cpfPixKey = new PixKey({ accountId: account.id, type: 'cpf', value: rawCpf, });
+                const cpfPixKey = new PixKey({ accountId: createdUser.account.id, type: 'cpf', value: rawCpf, });
                 await queryRunner.manager.save(PixKey, cpfPixKey);
                 createdUser.account.pixKeys.push(cpfPixKey);
             }
@@ -147,12 +176,11 @@ export class AuthService {
             // commit changes user and account
             await queryRunner.manager.save(User, createdUser);
 
-            createdUser.cpf = rawCpf;
             const tokens = await this.genTokens(createdUser.id, createdUser.username);
             const { password, ...user } = createdUser;
 
             await queryRunner.commitTransaction();
-
+            user.account = null;
             return { user, ...tokens };
         } catch (error) {
             if (queryRunner.isTransactionActive) { await queryRunner.rollbackTransaction(); }

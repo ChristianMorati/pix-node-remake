@@ -1,6 +1,6 @@
 import { Body, Controller, HttpCode, HttpException, HttpStatus, Post, Put, Res, UnauthorizedException } from '@nestjs/common';
 import { Response } from 'express';
-import { ApiBody, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthDto } from '../dto/auth.dto';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { AuthService } from '../service/auth.service';
@@ -14,6 +14,7 @@ export class AuthController {
     ) { }
 
     @Post('signin')
+    @ApiBody({ description: 'The user data what you want to signin', type: AuthDto })
     @HttpCode(HttpStatus.OK)
     async signIn(
         @Body() authDto: AuthDto,
@@ -34,12 +35,16 @@ export class AuthController {
 
             return res.status(HttpStatus.OK).json(result);
         } catch (error) {
-            return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send();
+            throw new HttpException(
+                { success: false, message: error.message || 'Error signIn user' },
+                HttpStatus.BAD_REQUEST,
+            );
         }
     }
 
 
     @Post('signup')
+    @ApiOperation({ summary: 'Create a user and associate an account and pre-activate the pix keys' })
     @HttpCode(HttpStatus.CREATED)
     @ApiBody({ description: 'The user data what you want to create', type: CreateUserDto })
     async signUp(
@@ -57,6 +62,8 @@ export class AuthController {
     }
 
     @Put('refresh')
+    @HttpCode(HttpStatus.CREATED)
+    @ApiBody({ description: 'The user tokens what you want to refresh', type: UpdateTokensDto })
     async refresh(
         @Body() body: UpdateTokensDto,
         @Res() res: Response) {

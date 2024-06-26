@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNumber, IsString, Min, IsEnum } from 'class-validator';
-import { PixKeyType } from '../enum/pix-key-type.enum';
+import { PixKeyType } from '../../pix-key/enum/pix-key-type.enum';
 import { TransactionType } from '../enum/transaction-type.enum';
 
 export class RefundTransactionDto {

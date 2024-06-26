@@ -18,12 +18,18 @@ export class AT {
 
 
 export class AuthDto {
-    @ApiProperty({ description: 'The user email' })
+    @ApiProperty({
+        description: 'The user email',
+        example: "johndoe@example.com",
+    })
     @MinLength(6)
     @IsEmail()
     username: string
 
-    @ApiProperty({ description: 'User password' })
+    @ApiProperty({
+        description: 'User password',
+        example: 'securePassword123',
+    })
     @IsString()
     @MinLength(6)
     password: string

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { EntityManager } from 'typeorm';
+import { EntityManager, QueryRunner } from 'typeorm';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { Account } from 'src/account/entities/account.entity';
 import { Transaction } from './entities/transaction.entity';
@@ -11,6 +11,7 @@ import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { TransactionType } from './enum/transaction-type.enum';
 import { TransactionDto } from './dto/transaction.dto';
+import { PixKeyType } from 'src/pix-key/enum/pix-key-type.enum';
 
 @Injectable()
 export class TransactionService {
@@ -21,19 +22,15 @@ export class TransactionService {
     private readonly accountRepository: AccountRepository
   ) { }
 
-  /**
-  * Transfer amount between Accounts and create a Transaction Object.
-  */
   async create(createTransactionDto: CreateTransactionDto): Promise<Transaction> {
     const { payerUserId, payeePixKey, amount, payeePixKeyType } = createTransactionDto;
     const queryRunner = this.entityManager.connection.createQueryRunner();
 
     await queryRunner.startTransaction();
-    console.error(createTransactionDto);
 
     try {
-      const payerAccount = await this.findAccountByUserId(queryRunner, payerUserId);
-      const payeeAccount = await this.findAccountByPixKey(queryRunner, payeePixKey, payeePixKeyType);
+      const payerAccount = await this.accountRepository.findOneByUserId(payerUserId);
+      const payeeAccount = await this.accountRepository.findOneByPixKey({ value: payeePixKey, type: PixKeyType[payeePixKeyType] });
 
       this.validateAccounts(payerAccount, payeeAccount, amount);
 
@@ -72,8 +69,8 @@ export class TransactionService {
 
       const createdTransaction = await queryRunner.manager.save(Transaction, transaction);
 
-      const payerAccount = await this.findAccountByUserId(queryRunner, payerUserId);
-      const payeeAccount = await this.findAccountByPixKey(queryRunner, payeePixKey, payeePixKeyType);
+      const payerAccount = await this.accountRepository.findOneByPixKey({ value: payeePixKey, type: PixKeyType[payeePixKeyType] });
+      const payeeAccount = await this.accountRepository.findOneByUserId(payerUserId);
 
       this.validateAccounts(payerAccount, payeeAccount, amount);
 
@@ -93,19 +90,27 @@ export class TransactionService {
     }
   }
 
-  private async findAccountByUserId(queryRunner, userId: number): Promise<Account> {
+  private async findAccountByUserId(queryRunner: QueryRunner, userId: number): Promise<Account> {
     try {
-      return await queryRunner.manager.findOneOrFail(Account, { where: { userId } });
+      return await queryRunner.manager.findOneOrFail(Account, {
+        where: { userId },
+        relations: ['pixKeys'],
+      });
     } catch (error) {
       throw new PayerAccountNotFound(`Payer account with user ID ${userId} not found.`);
     }
   }
 
-  private async findAccountByPixKey(queryRunner, pixKey: string, pixKeyType: string): Promise<Account> {
+  private async findAccountByPixKey(queryRunner: QueryRunner, pixKey: string, pixKeyType: string): Promise<Account> {
     try {
-      return await queryRunner.manager.findOneOrFail(Account, {
+      const accounts = await queryRunner.manager.find(Account, {
         where: { pixKeys: { value: pixKey, type: pixKeyType } },
+        relations: ['pixKeys'],
       });
+      if (accounts.length === 0) {
+        throw new PayeeAccountNotFound(`Payee account with Pix key ${pixKey} and type ${pixKeyType} not found.`);
+      }
+      return accounts[0];
     } catch (error) {
       throw new PayeeAccountNotFound(`Payee account with Pix key ${pixKey} and type ${pixKeyType} not found.`);
     }
@@ -132,7 +137,6 @@ export class TransactionService {
     createTransactionDto: CreateTransactionDto | RefundTransactionDto
   ): Transaction {
     const { amount, payerUserId, payeePixKey } = createTransactionDto;
-    console.error(createTransactionDto)
     return new Transaction({
       success: true,
       amount,
@@ -169,11 +173,11 @@ export class TransactionService {
     return transactions ? transactions : null;
   }
 
-  update(id: number, updateTransactionDto: UpdateTransactionDto) {
-    return `This action updates a #${id} transaction`;
+  async update(id: number, updateTransactionDto: UpdateTransactionDto) {
+    return await this.transactionRepository.update(id, updateTransactionDto);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} transaction`;
+  async remove(id: number) {
+    return await this.transactionRepository.remove(id);
   }
 }

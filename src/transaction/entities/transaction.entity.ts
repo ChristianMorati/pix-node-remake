@@ -8,10 +8,10 @@ export class Transaction extends BaseEntity {
     amount: number;
 
     @Column()
-    payeePixKeyType: string;
-
-    @Column()
     payerUserId: number;
+    
+    @Column({ nullable: true })
+    payeePixKeyType: string;
 
     @Column({ nullable: true })
     payeePixKey: string;
@@ -25,7 +25,7 @@ export class Transaction extends BaseEntity {
     @Column()
     success: boolean;
 
-    @Column({ type: 'enum', enum: TransactionType })
+    @Column({ type: 'enum', enum: TransactionType, nullable: true })
     type: TransactionType;
 
     constructor(transaction: Partial<Transaction>) {
@@ -35,7 +35,7 @@ export class Transaction extends BaseEntity {
         this.payerUserId = transaction?.payerUserId ?? null;
         this.payeePixKey = transaction?.payeePixKey ?? null;
         this.accountId = transaction?.accountId ?? null;
+        this.type = transaction?.type ?? null;
         this.success = transaction?.success ?? false;
-        this.type = transaction?.type ?? TransactionType.TRANSACTION;
     }
 }

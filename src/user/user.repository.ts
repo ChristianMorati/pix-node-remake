@@ -9,16 +9,12 @@ export class UserRepository {
         private userRepository: Repository<User>,
     ) { }
 
-    async findOneByUsername(username: string) {
-        return await this.userRepository.findOne({ where: { username } });
-    }
-
     async save(createUserDto: CreateUserDto) {
         return await this.userRepository.save(createUserDto);
     }
 
     async findOne(id: number) {
-        return await this.userRepository.findOne({
+        return await this.userRepository.findOneOrFail({
             where: { id },
             relations: {
                 account: true
@@ -29,4 +25,13 @@ export class UserRepository {
         const user: User = await this.userRepository.findOne({ where: { account: { pixKeys: { value: pixKey, type: type } } } });
         return user || null;
     }
+
+    async findOneByCpf(Cpf: string): Promise<User> {
+        return await this.userRepository.findOneOrFail({ where: { cpf: Cpf } });
+    }
+
+    async findOneByUsername(email: string): Promise<User> {
+        return await this.userRepository.findOneByOrFail({ username: email });
+    }
 }
+

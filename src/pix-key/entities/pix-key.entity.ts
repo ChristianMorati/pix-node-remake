@@ -7,17 +7,17 @@ export class PixKey extends BaseEntity {
     @Column({ nullable: true })
     accountId: number
 
-    @ManyToOne(() => Account, (account) => account.pixKeys)
+    @ManyToOne(() => Account, (account) => account.pixKeys, { onDelete: 'SET NULL' })
     @JoinTable()
     account: Account;
 
     @Column()
-    type: string |'email' | 'cpf' | 'cnpj' | 'phone';
+    type: string | 'email' | 'cpf' | 'cnpj' | 'phone';
 
     @Column()
     value: string;
 
-    @Column({ default: false })
+    @Column({ default: true })
     is_active: boolean;
 
     constructor(pixKey: Partial<PixKey>) {

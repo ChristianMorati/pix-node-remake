@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Transaction } from './entities/transaction.entity';
+import { UpdateTransactionDto } from './dto/update-transaction.dto';
 
 @Injectable()
 export class TransactionRepository {
@@ -32,5 +33,16 @@ export class TransactionRepository {
 
     async remove(id: number): Promise<void> {
         await this.transactionRepository.delete(id);
+    }
+
+    async update(id: number, updateTransactionDto: UpdateTransactionDto): Promise<Transaction> {
+        const transaction = await this.transactionRepository.findOneBy({ id });
+
+        if (!transaction) {
+            throw new BadRequestException(`Transaction with id ${id} not found`);
+        }
+
+        Object.assign(transaction, updateTransactionDto);
+        return this.transactionRepository.save(transaction);
     }
 }

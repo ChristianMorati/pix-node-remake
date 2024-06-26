@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Account } from './entities/account.entity';
+import { GetUserByPixKey } from 'src/user/dto/get-user-by-pix-key.dto';
 
 @Injectable()
 export class AccountRepository {
@@ -15,20 +16,25 @@ export class AccountRepository {
     }
 
     findOneById(id: number): Promise<Account | null> {
-        return this.accountRepository.findOneBy({ id });
+        return this.accountRepository.findOneByOrFail({ id });
     }
 
     findOneByUserId(id: number): Promise<Account | null> {
-        return this.accountRepository.findOneBy({ userId: id });
+        return this.accountRepository.findOneByOrFail({ userId: id });
     }
 
-    findOneByPixKey(payeePixKey: string): Promise<Account | null> {
-        return this.accountRepository.findOneBy({ pixKeys: { value: payeePixKey } });
+    async findOneByPixKey(dto: GetUserByPixKey): Promise<Account | undefined> {
+        const account = await this.accountRepository.findOneOrFail({
+            where: { pixKeys: { type: dto.type, value: dto.value } },
+        });
+
+        return await this.findOneById(account.id);
     }
 
     findOne(id: number): Promise<Account | null> {
-        return this.accountRepository.findOne({
-            where: { id }
+        return this.accountRepository.findOneOrFail({
+            where: { id },
+            relations: { pixKeys: true }
         });
     }
 

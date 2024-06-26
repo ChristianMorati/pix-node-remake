@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePixKeyDto } from './dto/create-pix-key.dto';
 import { UpdatePixKeyDto } from './dto/update-pix-key.dto';
 import { PixKeyRepository } from 'src/pix-key/pix-keys.repository';
@@ -40,7 +40,7 @@ export class PixKeyService {
       if (!pixKey) {
         throw NotFoundException;
       }
-      
+
       pixKey.is_active = false;
 
       await this.pixKeyRepository.save(pixKey);
@@ -57,10 +57,10 @@ export class PixKeyService {
       if (!pixKey) {
         throw NotFoundException;
       }
-      
+
       pixKey.is_active = true;
       await this.pixKeyRepository.save(pixKey);
-      
+
       return true;
     } catch (e) {
       return false;
@@ -75,12 +75,18 @@ export class PixKeyService {
     return this.pixKeyRepository.findOne(id);
   }
 
-  update(id: number, updatePixKeyDto: UpdatePixKeyDto) {
-    // logic here
-    return `This action updates a #${id} pixKey`;
+  async update(id: number, updatePixKeyDto: UpdatePixKeyDto) {
+    const transaction = await this.pixKeyRepository.findOne(id);
+
+    if (!transaction) {
+      throw new BadRequestException(`Pix key with id ${id} not found`);
+    }
+
+    Object.assign(transaction, updatePixKeyDto);
+    return this.pixKeyRepository.save(transaction);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} pixKey`;
+  async remove(id: number): Promise<void> {
+    await this.pixKeyRepository.delete(id);
   }
 }

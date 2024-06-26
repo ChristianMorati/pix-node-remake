@@ -2,11 +2,13 @@ import { AccountRepository } from "../account.repository";
 import { UserRepository } from "src/user/user.repository";
 import { Account } from "../entities/account.entity";
 import { CreateAccountDto } from "../dto/create-account-dto";
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { InjectEntityManager } from "@nestjs/typeorm";
-import { EntityManager } from "typeorm";
+import { EntityManager, EntityNotFoundError } from "typeorm";
 import { Transaction } from "src/transaction/entities/transaction.entity";
 import { DepositAccountDto } from "../dto/deposit-account.dto";
+import { GetAccountByPixKeyDto } from "../dto/get-account-by-pix-key.dto";
+import { TransactionType } from "src/transaction/enum/transaction-type.enum";
 
 @Injectable()
 export class AccountService {
@@ -18,18 +20,42 @@ export class AccountService {
     ) { }
 
     async getAccountById(id: number) {
-        const account = await this.accountRepository.findOne(id);
-        return account;
+        try {
+            const account = await this.accountRepository.findOne(id);
+            return account;
+        } catch (error) {
+            if (error instanceof EntityNotFoundError) {
+                throw new BadRequestException(`Account with id: ${id} not founded`);
+            }
+
+            throw error;
+        }
     }
 
-    async getAccountByPixKey(pixKey: string) {
-        const account = await this.accountRepository.findOneByPixKey(pixKey);
-        return account;
+    async getAccountByPixKey(dto: GetAccountByPixKeyDto) {
+        try {
+            const account = await this.accountRepository.findOneByPixKey(dto);
+            return account;
+        } catch (error) {
+            if (error instanceof EntityNotFoundError) {
+                throw new BadRequestException(`Account with pixKey: ${JSON.stringify(dto)} not founded`);
+            }
+
+            throw error;
+        }
     }
 
     async getAccountByUserId(id: number) {
-        const account = await this.accountRepository.findOneByUserId(id);
-        return account;
+        try {
+            const account = await  this.accountRepository.findOneByUserId(id);
+            return account;
+        } catch (error) {
+            if (error instanceof EntityNotFoundError) {
+                throw new BadRequestException(`Account with userId: ${id} not founded`);
+            }
+            
+            throw error;
+        }
     }
 
     async all() {
@@ -39,9 +65,9 @@ export class AccountService {
 
     async addBalance(accountId: number, amount: number) {
         try {
-            const accountToAddBalance = await this.getAccountById(accountId);
+            const accountToAddBalance = await this.accountRepository.findOne(accountId);
             if (!accountToAddBalance) {
-                throw new NotFoundException();
+                throw new BadRequestException('Account not found');
             }
             accountToAddBalance.deposit(amount);
             return accountToAddBalance;
@@ -52,7 +78,7 @@ export class AccountService {
 
     async deposit(dto: DepositAccountDto) {
         const queryRunner = this.entityManager.connection.createQueryRunner();
-        const {accountId, amount} = dto;
+        const { accountId, amount } = dto;
         try {
             await queryRunner.startTransaction();
             const account = await this.addBalance(accountId, amount);
@@ -62,7 +88,9 @@ export class AccountService {
                 amount,
                 payerUserId: account.userId,
                 payeePixKey: null,
+                payeePixKeyType: null,
                 success: true,
+                type: TransactionType.DEPOSIT,
                 date: new Date(),
             })
 
@@ -72,44 +100,40 @@ export class AccountService {
             await queryRunner.commitTransaction();
             return transaction;
         } catch (error) {
-            // Rollback transaction on error
             if (queryRunner.isTransactionActive) {
                 await queryRunner.rollbackTransaction();
             }
 
             throw error;
         } finally {
-            // Release the query runner
             await queryRunner.release();
         }
     }
 
     async saveAccount(createAccountDto: CreateAccountDto) {
-        try {
-            const { userId, initialBalance } = createAccountDto;
+        const { userId, initialBalance } = createAccountDto;
 
+        try {
             const user = await this.userRepository.findOne(userId);
 
             if (!user) {
-                throw new Error('User not found');
+                throw new BadRequestException('User not found');
             }
 
             const existingAccount = await this.accountRepository.findOneByUserId(user.id);
 
             if (existingAccount) {
-                throw new Error('Account already exists for this user');
+                throw new BadRequestException('Account already exists for this user');
             }
 
             const account = new Account({ balance: initialBalance, userId: user.id });
             const createdAccount = await this.accountRepository.save(account);
 
             user.account = createdAccount;
-
             const updatedAccount = await this.userRepository.save(user);
             return updatedAccount;
-        } catch (e) {
-            console.error(e);
-            throw new Error(e);
+        } catch (error) {
+            throw error;
         }
     }
 }
