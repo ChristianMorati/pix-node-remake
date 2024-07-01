@@ -67,21 +67,6 @@ export class AuthService {
         return refreshToken;
     }
 
-    async validateUser(payload: any) {
-        const { username } = payload;
-
-        // Verifica se o usuário existe no banco de dados
-        const user = await this.usersRepository.findOneByUsername(username);
-
-        if (!user) {
-            throw new UnauthorizedException('Usuário não encontrado');
-        }
-
-        // Aqui você pode adicionar lógica adicional para verificar se o usuário está ativo, etc.
-
-        return user; // Retorna o usuário autenticado
-    }
-
     /**
     * Login User and generates a tokens.
     */
