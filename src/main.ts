@@ -1,21 +1,19 @@
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-
-import { AppModule } from './app.module';
 import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const app = await NestFactory.create(AppModule);
 
   app.use(cookieParser());
 
-  /*
   const allowedOrigins = [
     'http://localhost:5000',
+    'http://localhost:5500',
     'http://localhost:3000',
     'https://hoppscotch.io',
-
   ];
 
   app.enableCors({
@@ -26,10 +24,9 @@ async function bootstrap() {
         callback(new Error('Not allowed by CORS'));
       }
     },
-    credentials: true, // Permitir envio de cookies
+    credentials: true,
   });
-  */
- 
+
   const swagger_config = new DocumentBuilder()
     .setTitle('PIX Node Remake API')
     .setDescription('With this API you be able to simulate transactions between users!')

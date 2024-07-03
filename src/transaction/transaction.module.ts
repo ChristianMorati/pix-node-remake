@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Account } from 'src/account/entities/account.entity';
 import { Transaction } from './entities/transaction.entity';
 import { TransactionRepository } from './transaction.repository';
+import { EventsGateway } from 'src/sse';
 
 @Module({
   imports: [
@@ -15,7 +16,11 @@ import { TransactionRepository } from './transaction.repository';
   providers: [
     TransactionService,
     AccountRepository,
-    TransactionRepository
+    TransactionRepository,
+    EventsGateway,
   ],
+  exports: [
+    EventsGateway
+  ]
 })
 export class TransactionModule { }

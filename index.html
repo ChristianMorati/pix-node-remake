@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>WebSocket Client</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+</head>
+
+<body>
+    <h1>Account Balance</h1>
+    <div id="account-balance">Loading...</div>
+
+    <script>
+        const userId = 1;
+        const socket = io('http://localhost:3000', {
+            query: { userId },
+            withCredentials: true,
+            transports: ['websocket'],
+        });
+        document.write(userId)
+        socket.on('transaction', function (data) {
+            console.log('Dados atualizados da conta recebidos:', data);
+            const { account, transaction } = data;
+
+            updateAccountUI(data);
+        });
+
+        function updateAccountUI(data) {
+            document.getElementById('account-balance').textContent = data.balance;
+        }
+    </script>
+</body>
+
+</html>

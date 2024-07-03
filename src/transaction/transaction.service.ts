@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { EntityManager, QueryRunner } from 'typeorm';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { EntityManager } from 'typeorm';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { Account } from 'src/account/entities/account.entity';
 import { Transaction } from './entities/transaction.entity';
-import { InsufficientFundsError, PayeeAccountNotFound, PayerAccountNotFound } from 'src/errors';
+import { InsufficientFundsError } from 'src/errors';
 import { TransactionRepository } from './transaction.repository';
 import { AccountRepository } from 'src/account/account.repository';
 import { RefundTransactionDto } from './dto/refund-transaction.dto';
@@ -12,6 +12,8 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { TransactionType } from './enum/transaction-type.enum';
 import { TransactionDto } from './dto/transaction.dto';
 import { PixKeyType } from 'src/pix-key/enum/pix-key-type.enum';
+import { EventsGateway } from 'src/sse';
+import { TransactionEventsTypesEnum } from './enum';
 
 @Injectable()
 export class TransactionService {
@@ -19,16 +21,17 @@ export class TransactionService {
     @InjectEntityManager()
     private readonly entityManager: EntityManager,
     private readonly transactionRepository: TransactionRepository,
-    private readonly accountRepository: AccountRepository
+    private readonly accountRepository: AccountRepository,
+    private readonly eventsGateway: EventsGateway
   ) { }
 
   async create(createTransactionDto: CreateTransactionDto): Promise<Transaction> {
     const { payerUserId, payeePixKey, amount, payeePixKeyType } = createTransactionDto;
+
     const queryRunner = this.entityManager.connection.createQueryRunner();
 
-    await queryRunner.startTransaction();
-
     try {
+      await queryRunner.startTransaction();
       const payerAccount = await this.accountRepository.findOneByUserId(payerUserId);
       const payeeAccount = await this.accountRepository.findOneByPixKey({ value: payeePixKey, type: PixKeyType[payeePixKeyType] });
 
@@ -46,6 +49,10 @@ export class TransactionService {
       await this.saveEntities(queryRunner, payerAccount, payeeAccount, transaction);
 
       await queryRunner.commitTransaction();
+
+      const eventName = TransactionEventsTypesEnum.TRANSACTION;
+      this.sendTransactionUpdateEvent(payerAccount, payeeAccount, transaction, eventName);
+
       return transaction;
     } catch (error) {
       if (queryRunner.isTransactionActive) {
@@ -58,12 +65,12 @@ export class TransactionService {
   }
 
   async refund(transactionDto: TransactionDto): Promise<Transaction> {
-    const queryRunner = this.entityManager.connection.createQueryRunner();
-
     const { payerUserId, payeePixKey, amount, payeePixKeyType } = transactionDto;
 
-    await queryRunner.startTransaction();
+    const queryRunner = this.entityManager.connection.createQueryRunner();
     try {
+      await queryRunner.startTransaction();
+
       const transaction: Transaction = await this.transactionRepository.findOne(transactionDto.id);
       transaction.type = TransactionType.REFUND;
 
@@ -73,12 +80,15 @@ export class TransactionService {
       const payeeAccount = await this.accountRepository.findOneByUserId(payerUserId);
 
       this.validateAccounts(payerAccount, payeeAccount, amount);
-
       this.updateBalances(payeeAccount, payerAccount, amount);
 
       await this.saveEntities(queryRunner, payerAccount, payeeAccount, transaction);
 
       await queryRunner.commitTransaction();
+
+      const eventName = TransactionEventsTypesEnum.REFUND;
+      this.sendTransactionUpdateEvent(payerAccount, payeeAccount, transaction, eventName);
+
       return createdTransaction;
     } catch (error) {
       if (queryRunner.isTransactionActive) {
@@ -90,35 +100,9 @@ export class TransactionService {
     }
   }
 
-  private async findAccountByUserId(queryRunner: QueryRunner, userId: number): Promise<Account> {
-    try {
-      return await queryRunner.manager.findOneOrFail(Account, {
-        where: { userId },
-        relations: ['pixKeys'],
-      });
-    } catch (error) {
-      throw new PayerAccountNotFound(`Payer account with user ID ${userId} not found.`);
-    }
-  }
-
-  private async findAccountByPixKey(queryRunner: QueryRunner, pixKey: string, pixKeyType: string): Promise<Account> {
-    try {
-      const accounts = await queryRunner.manager.find(Account, {
-        where: { pixKeys: { value: pixKey, type: pixKeyType } },
-        relations: ['pixKeys'],
-      });
-      if (accounts.length === 0) {
-        throw new PayeeAccountNotFound(`Payee account with Pix key ${pixKey} and type ${pixKeyType} not found.`);
-      }
-      return accounts[0];
-    } catch (error) {
-      throw new PayeeAccountNotFound(`Payee account with Pix key ${pixKey} and type ${pixKeyType} not found.`);
-    }
-  }
-
   private validateAccounts(payerAccount: Account, payeeAccount: Account, amount: number): void {
     if (payerAccount.id === payeeAccount.id) {
-      throw new Error('Payer and payee accounts are the same.');
+      throw new BadRequestException('Payer and payee accounts are the same.');
     }
 
     if (payerAccount.balance < amount) {
@@ -129,6 +113,12 @@ export class TransactionService {
   private updateBalances(payerAccount: Account, payeeAccount: Account, amount: number): void {
     payerAccount.withdraw(amount);
     payeeAccount.deposit(amount);
+  }
+
+  private sendTransactionUpdateEvent(account: Account, account2: Account, transaction: Transaction, eventName: TransactionEventsTypesEnum) {
+    type transactionEventData = { account: Account, transaction: Transaction };
+    this.eventsGateway.sendEventToUser(account.userId, { account, transaction } as transactionEventData, eventName);
+    this.eventsGateway.sendEventToUser(account2.userId, { account: account2, transaction } as transactionEventData, eventName);
   }
 
   private createTransactionObject(

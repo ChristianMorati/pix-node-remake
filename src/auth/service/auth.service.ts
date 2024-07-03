@@ -13,11 +13,6 @@ import { EntityManager, EntityNotFoundError } from 'typeorm';
 import { Account } from 'src/account/entities/account.entity';
 import { PixKey } from 'src/pix-key/entities/pix-key.entity';
 
-type Payload = {
-    sub: number,
-    username: string
-}
-
 @Injectable()
 export class AuthService {
     private readonly key: string = process.env.ENCRYPTION_KEY;
@@ -65,21 +60,6 @@ export class AuthService {
             secret: jwtConstants.secret,
         });
         return refreshToken;
-    }
-
-    async validateUser(payload: any) {
-        const { username } = payload;
-
-        // Verifica se o usuário existe no banco de dados
-        const user = await this.usersRepository.findOneByUsername(username);
-
-        if (!user) {
-            throw new UnauthorizedException('Usuário não encontrado');
-        }
-
-        // Aqui você pode adicionar lógica adicional para verificar se o usuário está ativo, etc.
-
-        return user; // Retorna o usuário autenticado
     }
 
     /**
@@ -200,7 +180,6 @@ export class AuthService {
 
     /**
     * Generate new tokens based on the integrity of the Access Token.
-    * @returns {accessToken: string, refresh_token: string} Especifc Transaction.
     */
     async validateRefreshToken(access_token: string, refresh_token: string)
         : Promise<{ access_token: string, refresh_token: string }> {
