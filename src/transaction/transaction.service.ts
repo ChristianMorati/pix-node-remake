@@ -51,7 +51,7 @@ export class TransactionService {
       await queryRunner.commitTransaction();
 
       const eventName = TransactionEventsTypesEnum.TRANSACTION;
-      this.sendTransactionUpdateEvent(payerAccount, payeeAccount, transaction, eventName);
+      this.sendTransactionUpdateEvent(payeeAccount, transaction, eventName);
 
       return transaction;
     } catch (error) {
@@ -87,7 +87,7 @@ export class TransactionService {
       await queryRunner.commitTransaction();
 
       const eventName = TransactionEventsTypesEnum.REFUND;
-      this.sendTransactionUpdateEvent(payerAccount, payeeAccount, transaction, eventName);
+      this.sendTransactionUpdateEvent(payeeAccount, transaction, eventName);
 
       return createdTransaction;
     } catch (error) {
@@ -115,10 +115,9 @@ export class TransactionService {
     payeeAccount.deposit(amount);
   }
 
-  private sendTransactionUpdateEvent(account: Account, account2: Account, transaction: Transaction, eventName: TransactionEventsTypesEnum) {
+  private sendTransactionUpdateEvent(payeeAccount: Account, transaction: Transaction, eventName: TransactionEventsTypesEnum) {
     type transactionEventData = { account: Account, transaction: Transaction };
-    this.eventsGateway.sendEventToUser(account.userId, { account, transaction } as transactionEventData, eventName);
-    this.eventsGateway.sendEventToUser(account2.userId, { account: account2, transaction } as transactionEventData, eventName);
+    this.eventsGateway.sendEventToUser(payeeAccount.userId, { transaction: transaction } as transactionEventData, eventName);
   }
 
   private createTransactionObject(
