@@ -80,7 +80,7 @@ export class TransactionService {
       const payeeAccount = await this.accountRepository.findOneByUserId(payerUserId);
 
       this.validateAccounts(payerAccount, payeeAccount, amount);
-      this.updateBalances(payeeAccount, payerAccount, amount);
+      this.updateBalances(payerAccount, payeeAccount, amount);
 
       await this.saveEntities(queryRunner, payerAccount, payeeAccount, transaction);
 
