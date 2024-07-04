@@ -9,7 +9,7 @@ export class Transaction extends BaseEntity {
 
     @Column()
     payerUserId: number;
-    
+
     @Column({ nullable: true })
     payeePixKeyType: string;
 
@@ -19,13 +19,13 @@ export class Transaction extends BaseEntity {
     @Column()
     accountId: number;
 
-    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
     date: Date;
 
     @Column()
     success: boolean;
 
-    @Column({ type: 'enum', enum: TransactionType, nullable: true })
+    @Column({ type: 'text', nullable: true })
     type: TransactionType;
 
     constructor(transaction: Partial<Transaction>) {

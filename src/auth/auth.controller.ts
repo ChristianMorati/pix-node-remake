@@ -1,10 +1,10 @@
 import { Body, Controller, HttpCode, HttpException, HttpStatus, Post, Put, Res, UnauthorizedException } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { AuthDto } from '../dto/auth.dto';
+import { AuthDto } from './dto/auth.dto';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { AuthService } from '../service/auth.service';
-import { UpdateTokensDto } from '../dto/update-tokens.dto';
+import { AuthService } from './auth.service';
+import { UpdateTokensDto } from './dto/update-tokens.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -30,7 +30,7 @@ export class AuthController {
                 httpOnly: true,
                 secure: true,
                 sameSite: 'strict',
-                maxAge: 3600000, // 1 hour
+                maxAge: 3600000,
             });
 
             return res.status(HttpStatus.OK).json(result);

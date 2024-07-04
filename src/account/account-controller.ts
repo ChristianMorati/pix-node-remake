@@ -1,11 +1,11 @@
-import { BadRequestException, Body, Controller, Get, HttpStatus, InternalServerErrorException, Param, ParseIntPipe, Post, Res } from "@nestjs/common";
-import { AccountService } from "../service/account-service";
-import { CreateAccountDto } from "../dto/create-account-dto";
+import { BadRequestException, Body, Controller, Get, HttpStatus, Param, Post, Res } from "@nestjs/common";
+import { AccountService } from "./account-service";
+import { CreateAccountDto } from "./dto/create-account-dto";
 import { Response } from "express";
-import { DepositAccountDto } from "../dto/deposit-account.dto";
+import { DepositAccountDto } from "./dto/deposit-account.dto";
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { NumericIdPipe } from "src/pipes/numeric-id.pipe";
-import { GetAccountByPixKeyDto } from "../dto/get-account-by-pix-key.dto";
+import { GetAccountByPixKeyDto } from "./dto/get-account-by-pix-key.dto";
 
 @ApiTags('account')
 @Controller('account')

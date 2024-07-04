@@ -42,5 +42,5 @@ export class CreateTransactionDto {
     })
     @IsOptional()
     @IsEnum(TransactionType)
-    type?: TransactionType;
+    type?: TransactionType.TRANSACTION;
 }

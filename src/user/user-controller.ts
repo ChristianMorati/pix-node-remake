@@ -1,9 +1,9 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Res, HttpStatus, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Response } from 'express';
-import { UsersService } from '../service/user.service';
+import { UsersService } from './user.service';
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { NumericIdPipe } from 'src/pipes/numeric-id.pipe';
-import { GetUserByPixKey } from '../dto/get-user-by-pix-key.dto';
+import { GetUserByPixKey } from './dto/get-user-by-pix-key.dto';
 
 @ApiTags('user')
 @Controller('user')

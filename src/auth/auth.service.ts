@@ -2,11 +2,10 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto-js';
 
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
-
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import { User } from 'src/user/entities/user.entity';
-import { jwtConstants } from '../constants';
+import { jwtConstants } from './constants';
 import { UserRepository } from 'src/user/user.repository';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, EntityNotFoundError } from 'typeorm';

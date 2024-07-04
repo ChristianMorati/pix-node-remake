@@ -1,18 +1,27 @@
-class PayerAccountNotFound extends Error {
+import { BadRequestException } from "@nestjs/common";
+
+class PayerAccountNotFound extends BadRequestException {
     constructor(message: string) {
         super(message);
         this.name = 'PayerAccountNotFound';
     }
 }
 
-class PayeeAccountNotFound extends Error {
+class PayeeAccountNotFound extends BadRequestException {
     constructor(message: string) {
         super(message);
         this.name = 'PayeeAccountNotFound';
     }
 }
 
-class InsufficientFundsError extends Error {
+class SameAccountPayee extends BadRequestException {
+    constructor(message: string) {
+        super(message);
+        this.name = 'PayeeAccountNotFound';
+    }
+}
+
+class InsufficientFundsError extends BadRequestException {
     constructor(message: string) {
         super(message);
         this.name = 'InsufficientFundsError';
@@ -22,5 +31,6 @@ class InsufficientFundsError extends Error {
 export {
     InsufficientFundsError,
     PayeeAccountNotFound,
-    PayerAccountNotFound
+    PayerAccountNotFound,
+    SameAccountPayee,
 }

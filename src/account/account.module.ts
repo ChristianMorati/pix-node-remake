@@ -3,9 +3,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'src/user/entities/user.entity';
 import { Account } from 'src/account/entities/account.entity';
 import { AccountRepository } from './account.repository';
-import { AccountService } from './service/account-service';
+import { AccountService } from './account-service';
 import { UserRepository } from 'src/user/user.repository';
-import { AccountController } from './controller/account-controller';
+import { AccountController } from './account-controller';
 
 @Module({
     imports: [

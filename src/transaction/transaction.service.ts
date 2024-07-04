@@ -3,7 +3,7 @@ import { EntityManager } from 'typeorm';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { Account } from 'src/account/entities/account.entity';
 import { Transaction } from './entities/transaction.entity';
-import { InsufficientFundsError } from 'src/errors';
+import { InsufficientFundsError, SameAccountPayee } from 'src/errors';
 import { TransactionRepository } from './transaction.repository';
 import { AccountRepository } from 'src/account/account.repository';
 import { RefundTransactionDto } from './dto/refund-transaction.dto';
@@ -14,6 +14,7 @@ import { TransactionDto } from './dto/transaction.dto';
 import { PixKeyType } from 'src/pix-key/enum/pix-key-type.enum';
 import { EventsGateway } from 'src/sse';
 import { TransactionEventsTypesEnum } from './enum';
+import { UserRepository } from 'src/user/user.repository';
 
 @Injectable()
 export class TransactionService {
@@ -21,6 +22,7 @@ export class TransactionService {
     @InjectEntityManager()
     private readonly entityManager: EntityManager,
     private readonly transactionRepository: TransactionRepository,
+    private readonly userRepository: UserRepository,
     private readonly accountRepository: AccountRepository,
     private readonly eventsGateway: EventsGateway
   ) { }
@@ -86,7 +88,7 @@ export class TransactionService {
 
       await queryRunner.commitTransaction();
 
-      const eventName = TransactionEventsTypesEnum.REFUND;
+      const eventName = TransactionEventsTypesEnum.TRANSACTION;
       this.sendTransactionUpdateEvent(payeeAccount, transaction, eventName);
 
       return createdTransaction;
@@ -106,7 +108,7 @@ export class TransactionService {
     }
 
     if (payerAccount.balance < amount) {
-      throw new InsufficientFundsError('Insufficient funds in payer account.');
+      throw new BadRequestException('Insufficient funds in payer account.');
     }
   }
 
@@ -115,9 +117,10 @@ export class TransactionService {
     payeeAccount.deposit(amount);
   }
 
-  private sendTransactionUpdateEvent(payeeAccount: Account, transaction: Transaction, eventName: TransactionEventsTypesEnum) {
-    type transactionEventData = { account: Account, transaction: Transaction };
-    this.eventsGateway.sendEventToUser(payeeAccount.userId, { transaction: transaction } as transactionEventData, eventName);
+  async sendTransactionUpdateEvent(payeeAccount: Account, transaction: Transaction, eventName: TransactionEventsTypesEnum) {
+    type transactionEventData = { account: Account, transaction: Transaction, payerName: string };
+    const payerName = (await this.userRepository.getNameById(payeeAccount.userId)).name
+    this.eventsGateway.sendEventToUser(payeeAccount.userId, { transaction: transaction, payerName: payerName } as transactionEventData, eventName);
   }
 
   private createTransactionObject(

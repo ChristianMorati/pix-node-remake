@@ -1,13 +1,13 @@
-import { AccountRepository } from "../account.repository";
+import { AccountRepository } from "./account.repository";
 import { UserRepository } from "src/user/user.repository";
-import { Account } from "../entities/account.entity";
-import { CreateAccountDto } from "../dto/create-account-dto";
+import { Account } from "./entities/account.entity";
+import { CreateAccountDto } from "./dto/create-account-dto";
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { InjectEntityManager } from "@nestjs/typeorm";
 import { EntityManager, EntityNotFoundError } from "typeorm";
 import { Transaction } from "src/transaction/entities/transaction.entity";
-import { DepositAccountDto } from "../dto/deposit-account.dto";
-import { GetAccountByPixKeyDto } from "../dto/get-account-by-pix-key.dto";
+import { DepositAccountDto } from "./dto/deposit-account.dto";
+import { GetAccountByPixKeyDto } from "./dto/get-account-by-pix-key.dto";
 import { TransactionType } from "src/transaction/enum/transaction-type.enum";
 
 @Injectable()

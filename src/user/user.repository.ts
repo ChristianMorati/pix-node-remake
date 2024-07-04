@@ -21,6 +21,14 @@ export class UserRepository {
             }
         })
     }
+
+    async getNameById(id: number) {
+        return await this.userRepository.findOneOrFail({
+            select: ["name"],
+            where: { id }
+        })
+    }
+
     async findOneByPixKey(pixKey: string, type: string): Promise<User | null> {
         const user: User = await this.userRepository.findOne({ where: { account: { pixKeys: { value: pixKey, type: type } } } });
         return user || null;
