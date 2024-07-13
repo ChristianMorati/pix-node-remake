@@ -61,27 +61,6 @@ export class AuthService {
         return refreshToken;
     }
 
-    async validateUser(username: string, pass: string): Promise<any> {
-        var user = await this.usersRepository.findOneByUsername(username);
-
-        if (!user) {
-            return null;
-        }
-        if (!await this.compareHashPassword(pass, user.password)) {
-            return null;
-        }
-
-        const { password, cpf, account, ...result } = user;
-        return this.jwtService.sign(result);
-    }
-
-    async login(user: any) {
-        const payload = { username: user.username, sub: user.userId };
-        return {
-            access_token: this.jwtService.sign(payload),
-        };
-    }
-
     /**
     * Login User and generates a tokens.
     */
