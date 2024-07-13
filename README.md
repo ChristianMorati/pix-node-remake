@@ -3,10 +3,6 @@
 </h1>
 <p>Um simulador de transações bancárias via pix entre contas<p>
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
 ## Installation
 
 ```bash
