@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { UserRepository } from 'src/user/user.repository';
-import { EntityNotFoundError } from 'typeorm';
+import { User } from './entities/user.entity';
 
 @Injectable()
 export class UsersService {
@@ -8,27 +8,21 @@ export class UsersService {
         private usersRepository: UserRepository
     ) { }
 
-    async getFullData(id: number) {
-        try {
-            const account = await this.usersRepository.findOne(id);
-            return account;
-        } catch (error) {
-            if (error instanceof EntityNotFoundError) {
-                throw new BadRequestException(`Account with userId: ${id} not founded`);
-            }
+    async getFullData(id: number): Promise<User | null> {
+        const user = await this.usersRepository.findOne(id);
+        return user;
+    }
 
-            throw error;
-        }
+    async findOneByUsername(username: string): Promise<User | null> {
+        const user = await this.usersRepository.findOneByUsername(username);
+        return user;
     }
 
     async getUserByPixKey(value: string, type: string): Promise<string> {
-        try {
-            const user = await this.usersRepository.findOneByPixKey(value, type);
-            if (!user) throw new BadRequestException('User not found');
-
-            return user.name;
-        } catch (error) {
-            throw error;
+        const user = await this.usersRepository.findOneByPixKey(value, type);
+        if (!user || !user.name) {
+            throw new BadRequestException('User not found');
         }
+        return user.name;
     }
 }

@@ -16,6 +16,12 @@ export class Transaction extends BaseEntity {
     @Column({ nullable: true })
     payeePixKey: string;
 
+    @Column({ nullable: true })
+    payerName: string;
+
+    @Column({ nullable: true })
+    payeeName: string;
+
     @Column()
     accountId: number;
 

@@ -61,6 +61,27 @@ export class AuthService {
         return refreshToken;
     }
 
+    async validateUser(username: string, pass: string): Promise<any> {
+        var user = await this.usersRepository.findOneByUsername(username);
+
+        if (!user) {
+            return null;
+        }
+        if (!await this.compareHashPassword(pass, user.password)) {
+            return null;
+        }
+
+        const { password, cpf, account, ...result } = user;
+        return this.jwtService.sign(result);
+    }
+
+    async login(user: any) {
+        const payload = { username: user.username, sub: user.userId };
+        return {
+            access_token: this.jwtService.sign(payload),
+        };
+    }
+
     /**
     * Login User and generates a tokens.
     */
@@ -75,10 +96,6 @@ export class AuthService {
             throw new UnauthorizedException();
         }
 
-        if (userSignin.cpf) {
-            userSignin.cpf = this.decryptToken(userSignin.cpf)
-        };
-
         const tokens = await this.genTokens(userSignin.id, userSignin.username);
 
         const { password, ...user } = userSignin;
@@ -87,24 +104,22 @@ export class AuthService {
 
     async cpfAlreadyExists(cpf: string) {
         try {
-            await this.usersRepository.findOneByCpf(cpf);
-            throw new BadRequestException(`user with cpf: ${cpf} already exists`);
-        } catch (e) {
-            if (e instanceof EntityNotFoundError) {
-                return null;
+            const userWithCpf = await this.usersRepository.findOneByCpf(cpf);
+            if (userWithCpf) {
+                throw new BadRequestException(`user with cpf: ${cpf} already exists`);
             }
+        } catch (e) {
             throw e;
         }
     }
 
     async emailAlreadyExists(email: string) {
         try {
-            await this.usersRepository.findOneByUsername(email);
-            throw new BadRequestException(`user with email: ${email} already exists`);
-        } catch (e) {
-            if (e instanceof EntityNotFoundError) {
-                return null;
+            const userWithEmail = await this.usersRepository.findOneByUsername(email);
+            if (userWithEmail) {
+                throw new BadRequestException(`user with email: ${email} already exists`);
             }
+        } catch (e) {
             throw e;
         }
     }

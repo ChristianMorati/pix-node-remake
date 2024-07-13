@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Res, HttpStatus, NotFoundException, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Res, HttpStatus, NotFoundException, UseGuards, BadRequestException } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
@@ -6,6 +6,7 @@ import { Response } from 'express';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { TransactionDto } from './dto/transaction.dto';
 import { NumericIdPipe } from 'src/pipes/numeric-id.pipe';
+import { RefundTransactionDto } from './dto/refund-transaction.dto';
 
 @ApiTags('transaction')
 @Controller('transaction')
@@ -30,6 +31,9 @@ export class TransactionController {
 
       return res.status(HttpStatus.CREATED).json(transaction);
     } catch (error) {
+      if (error instanceof BadRequestException) {
+        return res.status(HttpStatus.BAD_REQUEST).json(error)
+      }
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: 'Internal server error',
@@ -40,9 +44,9 @@ export class TransactionController {
 
   @Post('refund')
   @ApiOperation({ summary: 'Refund amount to origin account and update transaction type to refund' })
-  @ApiBody({ type: TransactionDto, required: true })
+  @ApiBody({ type: RefundTransactionDto, required: true })
   async refund(
-    @Body() refundTransactionDto: TransactionDto,
+    @Body() refundTransactionDto: RefundTransactionDto,
     @Res() res: Response,
   ) {
     try {

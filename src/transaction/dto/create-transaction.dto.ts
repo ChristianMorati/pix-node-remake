@@ -34,13 +34,4 @@ export class CreateTransactionDto {
     })
     @IsEnum(PixKeyType)
     payeePixKeyType: PixKeyType;
-
-    @ApiPropertyOptional({
-        description: 'Transaction type.',
-        enum: TransactionType,
-        example: TransactionType.TRANSACTION,
-    })
-    @IsOptional()
-    @IsEnum(TransactionType)
-    type?: TransactionType.TRANSACTION;
 }

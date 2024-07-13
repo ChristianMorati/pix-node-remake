@@ -10,14 +10,7 @@
 ## Installation
 
 ```bash
-npm install
-```
-
-## bcrypt Error on npm
-
-```bash
-# try installing using yarn
-$ yarn install bcrypt
+yarn install
 ```
 
 ## Database: SQLITE
@@ -33,9 +26,8 @@ $ sudo apt install sqlitebrowser
 
 ```bash
 # development
-$ npm run start
+$ yarn run start
 ```
-
 
 ## License
 

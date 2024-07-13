@@ -4,7 +4,7 @@ import { Account } from "./entities/account.entity";
 import { CreateAccountDto } from "./dto/create-account-dto";
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { InjectEntityManager } from "@nestjs/typeorm";
-import { EntityManager, EntityNotFoundError } from "typeorm";
+import { EntityManager } from "typeorm";
 import { Transaction } from "src/transaction/entities/transaction.entity";
 import { DepositAccountDto } from "./dto/deposit-account.dto";
 import { GetAccountByPixKeyDto } from "./dto/get-account-by-pix-key.dto";
@@ -22,12 +22,11 @@ export class AccountService {
     async getAccountById(id: number) {
         try {
             const account = await this.accountRepository.findOne(id);
-            return account;
-        } catch (error) {
-            if (error instanceof EntityNotFoundError) {
+            if (!account) {
                 throw new BadRequestException(`Account with id: ${id} not founded`);
             }
-
+            return account;
+        } catch (error) {
             throw error;
         }
     }
@@ -35,25 +34,23 @@ export class AccountService {
     async getAccountByPixKey(dto: GetAccountByPixKeyDto) {
         try {
             const account = await this.accountRepository.findOneByPixKey(dto);
-            return account;
-        } catch (error) {
-            if (error instanceof EntityNotFoundError) {
+            if (!account) {
                 throw new BadRequestException(`Account with pixKey: ${JSON.stringify(dto)} not founded`);
             }
-
+            return account;
+        } catch (error) {
             throw error;
         }
     }
 
     async getAccountByUserId(id: number) {
         try {
-            const account = await  this.accountRepository.findOneByUserId(id);
-            return account;
-        } catch (error) {
-            if (error instanceof EntityNotFoundError) {
+            const account = await this.accountRepository.findOneByUserId(id);
+            if (!account) {
                 throw new BadRequestException(`Account with userId: ${id} not founded`);
             }
-            
+            return account;
+        } catch (error) {
             throw error;
         }
     }

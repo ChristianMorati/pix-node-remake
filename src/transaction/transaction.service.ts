@@ -3,14 +3,12 @@ import { EntityManager } from 'typeorm';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { Account } from 'src/account/entities/account.entity';
 import { Transaction } from './entities/transaction.entity';
-import { InsufficientFundsError, SameAccountPayee } from 'src/errors';
 import { TransactionRepository } from './transaction.repository';
 import { AccountRepository } from 'src/account/account.repository';
 import { RefundTransactionDto } from './dto/refund-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { TransactionType } from './enum/transaction-type.enum';
-import { TransactionDto } from './dto/transaction.dto';
 import { PixKeyType } from 'src/pix-key/enum/pix-key-type.enum';
 import { EventsGateway } from 'src/sse';
 import { TransactionEventsTypesEnum } from './enum';
@@ -38,7 +36,6 @@ export class TransactionService {
       const payeeAccount = await this.accountRepository.findOneByPixKey({ value: payeePixKey, type: PixKeyType[payeePixKeyType] });
 
       this.validateAccounts(payerAccount, payeeAccount, amount);
-
       this.updateBalances(payerAccount, payeeAccount, amount);
 
       const transaction = this.createTransactionObject(
@@ -48,12 +45,17 @@ export class TransactionService {
       );
       transaction.type = TransactionType.TRANSACTION
 
+      const payerName = (await this.userRepository.getNameById(payerAccount.userId)).name
+      const payeeName = (await this.userRepository.getNameById(payeeAccount.userId)).name
+      transaction.payerName = payerName;
+      transaction.payeeName = payeeName;
+
       await this.saveEntities(queryRunner, payerAccount, payeeAccount, transaction);
 
       await queryRunner.commitTransaction();
 
-      const eventName = TransactionEventsTypesEnum.TRANSACTION;
-      this.sendTransactionUpdateEvent(payeeAccount, transaction, eventName);
+      // send transaction event to userId
+      this.sendTransactionUpdateEvent(payeeAccount, transaction, payerName);
 
       return transaction;
     } catch (error) {
@@ -66,9 +68,7 @@ export class TransactionService {
     }
   }
 
-  async refund(transactionDto: TransactionDto): Promise<Transaction> {
-    const { payerUserId, payeePixKey, amount, payeePixKeyType } = transactionDto;
-
+  async refund(transactionDto: RefundTransactionDto): Promise<Transaction> {
     const queryRunner = this.entityManager.connection.createQueryRunner();
     try {
       await queryRunner.startTransaction();
@@ -76,22 +76,25 @@ export class TransactionService {
       const transaction: Transaction = await this.transactionRepository.findOne(transactionDto.id);
       transaction.type = TransactionType.REFUND;
 
-      const createdTransaction = await queryRunner.manager.save(Transaction, transaction);
+      const payerAccount = await this.accountRepository.findOneByPixKey({ value: transaction.payeePixKey, type: PixKeyType[transaction.payeePixKeyType] });
+      const payeeAccount = await this.accountRepository.findOneByUserId(transaction.payerUserId);
 
-      const payerAccount = await this.accountRepository.findOneByPixKey({ value: payeePixKey, type: PixKeyType[payeePixKeyType] });
-      const payeeAccount = await this.accountRepository.findOneByUserId(payerUserId);
+      if (!payerAccount || !payeeAccount) {
+        throw new BadRequestException('Account not founded');
+      }
 
-      this.validateAccounts(payerAccount, payeeAccount, amount);
-      this.updateBalances(payerAccount, payeeAccount, amount);
+      this.validateAccounts(payerAccount, payeeAccount, transaction.amount);
+      this.updateBalances(payerAccount, payeeAccount, transaction.amount);
 
       await this.saveEntities(queryRunner, payerAccount, payeeAccount, transaction);
 
       await queryRunner.commitTransaction();
 
-      const eventName = TransactionEventsTypesEnum.TRANSACTION;
-      this.sendTransactionUpdateEvent(payeeAccount, transaction, eventName);
+      // send transaction event to userId
+      const payeeName = (await this.userRepository.getNameById(payeeAccount.userId)).name
+      this.sendTransactionUpdateEvent(payeeAccount, transaction, payeeName);
 
-      return createdTransaction;
+      return transaction;
     } catch (error) {
       if (queryRunner.isTransactionActive) {
         await queryRunner.rollbackTransaction();
@@ -103,6 +106,10 @@ export class TransactionService {
   }
 
   private validateAccounts(payerAccount: Account, payeeAccount: Account, amount: number): void {
+    if (!payerAccount || !payeeAccount) {
+      throw new BadRequestException('Some account was not founded');
+    }
+
     if (payerAccount.id === payeeAccount.id) {
       throw new BadRequestException('Payer and payee accounts are the same.');
     }
@@ -117,16 +124,16 @@ export class TransactionService {
     payeeAccount.deposit(amount);
   }
 
-  async sendTransactionUpdateEvent(payeeAccount: Account, transaction: Transaction, eventName: TransactionEventsTypesEnum) {
+  async sendTransactionUpdateEvent(payeeAccount: Account, transaction: Transaction, payerName: string) {
+    const eventName = TransactionEventsTypesEnum.TRANSACTION;
     type transactionEventData = { account: Account, transaction: Transaction, payerName: string };
-    const payerName = (await this.userRepository.getNameById(payeeAccount.userId)).name
     this.eventsGateway.sendEventToUser(payeeAccount.userId, { transaction: transaction, payerName: payerName } as transactionEventData, eventName);
   }
 
   private createTransactionObject(
     payeePixKeyType: string,
     payerAccountId: number,
-    createTransactionDto: CreateTransactionDto | RefundTransactionDto
+    createTransactionDto: CreateTransactionDto
   ): Transaction {
     const { amount, payerUserId, payeePixKey } = createTransactionDto;
     return new Transaction({

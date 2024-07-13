@@ -9,37 +9,42 @@ export class UserRepository {
         private userRepository: Repository<User>,
     ) { }
 
-    async save(createUserDto: CreateUserDto) {
+    async save(createUserDto: CreateUserDto): Promise<User> {
         return await this.userRepository.save(createUserDto);
     }
 
-    async findOne(id: number) {
-        return await this.userRepository.findOneOrFail({
+    async findOne(id: number): Promise<User | null> {
+        const user = await this.userRepository.findOne({
             where: { id },
             relations: {
                 account: true
             }
-        })
-    }
-
-    async getNameById(id: number) {
-        return await this.userRepository.findOneOrFail({
-            select: ["name"],
-            where: { id }
-        })
-    }
-
-    async findOneByPixKey(pixKey: string, type: string): Promise<User | null> {
-        const user: User = await this.userRepository.findOne({ where: { account: { pixKeys: { value: pixKey, type: type } } } });
+        });
         return user || null;
     }
 
-    async findOneByCpf(Cpf: string): Promise<User> {
-        return await this.userRepository.findOneOrFail({ where: { cpf: Cpf } });
+    async getNameById(id: number): Promise<{ name: string } | null> {
+        const user = await this.userRepository.findOne({
+            select: ["name"],
+            where: { id }
+        });
+        return user ? { name: user.name } : null;
     }
 
-    async findOneByUsername(email: string): Promise<User> {
-        return await this.userRepository.findOneByOrFail({ username: email });
+    async findOneByPixKey(pixKey: string, type: string): Promise<User | null> {
+        const user = await this.userRepository.findOne({
+            where: { account: { pixKeys: { value: pixKey, type: type } } }
+        });
+        return user || null;
+    }
+
+    async findOneByCpf(Cpf: string): Promise<User | null> {
+        const user = await this.userRepository.findOne({ where: { cpf: Cpf } });
+        return user || null;
+    }
+
+    async findOneByUsername(email: string): Promise<User | null> {
+        const user = await this.userRepository.findOneBy({ username: email });
+        return user || null;
     }
 }
-

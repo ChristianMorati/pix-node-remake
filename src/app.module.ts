@@ -15,11 +15,6 @@ import { JwtModule } from '@nestjs/jwt';
 @Module({
   imports: [
     ConfigModule.forRoot(),
-    JwtModule.register({
-      global: true,
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN },
-    }),
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'database.sqlite',
@@ -31,6 +26,13 @@ import { JwtModule } from '@nestjs/jwt';
       ],
       synchronize: true,
     }),
+    JwtModule,
+    JwtModule.register({
+      global: true,
+      secret: 'process.env.JWT_SECRET',
+      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN },
+    }),
+    UserModule,
     UserModule,
     AuthModule,
     AccountModule,
@@ -38,6 +40,5 @@ import { JwtModule } from '@nestjs/jwt';
     PixKeyModule
   ],
   controllers: [],
-  providers: []
 })
 export class AppModule { }

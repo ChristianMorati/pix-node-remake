@@ -15,24 +15,30 @@ export class AccountRepository {
         return this.accountRepository.save(account);
     }
 
-    findOneById(id: number): Promise<Account | null> {
-        return this.accountRepository.findOneByOrFail({ id });
+    async findOneById(id: number): Promise<Account | null> {
+        return await this.accountRepository.findOneBy({ id });
     }
 
-    findOneByUserId(id: number): Promise<Account | null> {
-        return this.accountRepository.findOneByOrFail({ userId: id });
+    async findOneByUserId(id: number): Promise<Account | null> {
+        const account = await this.accountRepository.findOneBy({ userId: id });
+        return account || null;
     }
 
-    async findOneByPixKey(dto: GetUserByPixKey): Promise<Account | undefined> {
-        const account = await this.accountRepository.findOneOrFail({
-            where: { pixKeys: { type: dto.type, value: dto.value } },
+    async findOneByPixKey(dto: GetUserByPixKey): Promise<Account | null> {
+        const { type, value } = dto;
+        const account = await this.accountRepository.findOne({
+            where: { pixKeys: { type, value } },
         });
 
-        return await this.findOneById(account.id);
+        if (!account) {
+            return null;
+        }
+
+        return await this.findOne(account.id);
     }
 
     findOne(id: number): Promise<Account | null> {
-        return this.accountRepository.findOneOrFail({
+        return this.accountRepository.findOne({
             where: { id },
             relations: { pixKeys: true }
         });
